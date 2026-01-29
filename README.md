@@ -1,6 +1,6 @@
-# Applied AI Engineering for the Enterprise - Day 2
+# Applied AI Engineering for the Enterprise - Security Workshop
 
-## Models & Retrieval-Augmented Generation (RAG)
+## Securing RAG, MCP, and Agents
 
 These instructions will guide you through running the container environment locally in a VS Code instance using Docker Desktop. If you instead need/want a GitHub Codespaces environment, see [README-codespaces.md](./README-codespaces.md) in this repository. 
 
@@ -16,7 +16,7 @@ These instructions will guide you through running the container environment loca
 <br>
 
 &emsp;&emsp;&emsp;&emsp;Click here ➡️ 
-<a href="https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/skilldevai/ae-day2">
+<a href="https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/skilldevai/ae-security">
   <img src="https://img.shields.io/static/v1?label=Dev%20Containers&message=Open&color=blue&style=for-the-badge"
        alt="Open in Dev Containers" height="48">    
 </a>     
