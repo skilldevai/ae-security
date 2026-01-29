@@ -1,7 +1,0 @@
-FROM neo4j:4.4
-
-COPY data3/omnitech_policies.csv /var/lib/neo4j/import/
-COPY data3/schema.cypher /var/lib/neo4j/import/
-COPY data3/apoc.conf /var/lib/neo4j/conf/
-
-RUN chown -R neo4j:neo4j /var/lib/neo4j/import/
