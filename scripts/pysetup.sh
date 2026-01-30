@@ -13,6 +13,6 @@ if [ -f "./requirements.txt" ]; then
 elif [ -f "./requirements/requirements.txt" ]; then
   pip3 install -r "./requirements/requirements.txt"
 else
-  pip3 install -r "/workspaces/ae-day2/requirements/requirements.txt"
+  pip3 install -r "/workspaces/ae-security/requirements/requirements.txt"
 fi
 
