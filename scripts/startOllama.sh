@@ -32,7 +32,7 @@ if pgrep -x ollama >/dev/null 2>&1; then
     ollama list 2>/dev/null || echo "No models loaded yet"
 else
     echo "✗ Failed to start Ollama"
-    echo "Check logs: cat /workspaces/ae-day2/ollama.log"
+    echo "Check logs: cat /workspaces/ae-security/ollama.log"
     exit 1
 fi
 
