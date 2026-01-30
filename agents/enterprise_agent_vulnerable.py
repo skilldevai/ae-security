@@ -4,9 +4,11 @@ Demonstrates security vulnerabilities in AI agents - educational purposes only.
 This agent has over-provisioned tools and no security controls.
 """
 
-from smolagents import ToolCallingAgent, LiteLLMModel, tool
+import os
+from smolagents import ToolCallingAgent, InferenceClientModel, tool
 
-MODEL = "ollama/llama3.2:latest"
+HF_TOKEN = os.environ.get("HF_TOKEN", "")
+HF_MODEL = os.environ.get("HF_MODEL", "meta-llama/Llama-3.1-8B-Instruct")
 
 # ========== SIMULATED EMPLOYEE DATABASE ==========
 
@@ -121,11 +123,13 @@ def main():
     print("\nOmniTech HR Benefits Assistant")
     print("Type 'quit' to exit.\n")
 
-    llm = LiteLLMModel(
-        model_id=MODEL,
-        api_base="http://localhost:11434",
-        num_ctx=4096,
-        temperature=0.0,
+    if not HF_TOKEN:
+        print("[ERROR] HF_TOKEN not set. Run: export HF_TOKEN='hf_...'")
+        return
+
+    llm = InferenceClientModel(
+        model_id=HF_MODEL,
+        token=HF_TOKEN,
     )
 
     # VULNERABILITY: Agent has ALL 5 tools, including dangerous ones

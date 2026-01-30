@@ -24,9 +24,11 @@ datasets>=4.4.1
 accelerate>=0.26.0
 tiktoken>=0.12.0
 
-# Note: Ollama is installed separately via:
-# curl -fsSL https://ollama.com/install.sh | sh
-# Then run: ollama pull llama3.2
+# HuggingFace Inference API (replaces local Ollama)
+huggingface-hub>=0.20.0
+
+# Note: Ollama is no longer required for RAG labs.
+# Set HF_TOKEN env var with your HuggingFace API token.
 
 # Optional for visualization in labs
 matplotlib>=3.6.0

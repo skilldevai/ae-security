@@ -13,11 +13,11 @@ import logging
 import os
 from typing import List, Dict
 from pathlib import Path
-import requests
 import json
 
 from chromadb import PersistentClient
 from chromadb.config import Settings, DEFAULT_TENANT, DEFAULT_DATABASE
+from huggingface_hub import InferenceClient
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("rag-vulnerable")
@@ -26,8 +26,9 @@ logger = logging.getLogger("rag-vulnerable")
 # Configuration
 # ═══════════════════════════════════════════════════════════════════
 
-OLLAMA_API_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:1b")
+HF_TOKEN = os.environ.get("HF_TOKEN", "")
+HF_MODEL = os.environ.get("HF_MODEL", "meta-llama/Llama-3.1-8B-Instruct")
+HF_CLIENT = InferenceClient(token=HF_TOKEN) if HF_TOKEN else None
 
 
 class RAGSystem:
@@ -146,35 +147,27 @@ ANSWER:"""
 
     def generate(self, prompt: str) -> str:
         """Generate answer - NO output validation"""
-        logger.info("[GENERATE] Querying Llama 3.2 via Ollama...")
+        logger.info(f"[GENERATE] Querying {HF_MODEL} via HuggingFace Inference API...")
+
+        if not HF_CLIENT:
+            return "Error: HF_TOKEN not set. Export your HuggingFace API token: export HF_TOKEN='hf_...'"
 
         try:
-            payload = {
-                "model": OLLAMA_MODEL,
-                "prompt": prompt,
-                "stream": False,
-                "options": {
-                    "temperature": 0.3,
-                    "top_p": 0.9,
-                    "max_tokens": 500
-                }
-            }
+            response = HF_CLIENT.chat_completion(
+                model=HF_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3,
+                top_p=0.9,
+                max_tokens=500,
+            )
+            answer = response.choices[0].message.content.strip()
+            logger.info("[GENERATE] Answer generated successfully")
+            return answer
 
-            response = requests.post(OLLAMA_API_URL, json=payload, timeout=60)
-
-            if response.status_code == 200:
-                result = response.json()
-                answer = result.get('response', '').strip()
-                logger.info("[GENERATE] Answer generated successfully")
-                return answer
-            else:
-                return f"Error: Ollama API error {response.status_code}"
-
-        except requests.exceptions.ConnectionError:
-            return "Error: Could not connect to Ollama. Make sure Ollama is running: ollama serve"
-        except requests.exceptions.Timeout:
-            return "Error: Ollama request timed out"
         except Exception as e:
+            error_msg = str(e)
+            if "503" in error_msg or "loading" in error_msg.lower():
+                return f"Error: Model is loading on HuggingFace. Please retry in a moment. ({error_msg})"
             return f"Error: Generation failed: {e}"
 
     # ═══════════════════════════════════════════════════════════════
@@ -252,7 +245,7 @@ if __name__ == "__main__":
     print("=" * 60)
     print("  RAG System - VULNERABLE VERSION")
     print("  (No Security Hardening)")
-    print("  Using ChromaDB + Llama 3.2 (Ollama)")
+    print(f"  Using ChromaDB + {HF_MODEL} (HuggingFace API)")
     print("=" * 60)
     print("\n  WARNING: This RAG system has NO defenses against")
     print("  document poisoning or prompt injection attacks.")
@@ -270,22 +263,15 @@ if __name__ == "__main__":
         for source, count in stats.get('sources', {}).items():
             print(f"    - {source}: {count} chunks")
 
-        # Check Ollama
+        # Check HuggingFace
         print("\n" + "=" * 60)
-        print("Checking Ollama Connection...")
+        print("Checking HuggingFace Connection...")
         print("=" * 60)
-        try:
-            response = requests.get("http://localhost:11434/api/tags", timeout=2)
-            if response.status_code == 200:
-                print("[OK] Ollama is running")
-                models = response.json().get('models', [])
-                model_names = [m.get('name', '') for m in models]
-                if OLLAMA_MODEL in model_names or any(OLLAMA_MODEL in name for name in model_names):
-                    print(f"[OK] Model '{OLLAMA_MODEL}' is available")
-                else:
-                    print(f"[!!] Model '{OLLAMA_MODEL}' not found. Run: ollama pull {OLLAMA_MODEL}")
-        except Exception:
-            print("[ERROR] Ollama not running. Start with: ollama serve")
+        if HF_CLIENT:
+            print(f"[OK] HF_TOKEN is set")
+            print(f"[OK] Model: {HF_MODEL}")
+        else:
+            print("[ERROR] HF_TOKEN not set. Run: export HF_TOKEN='hf_...'")
 
         print("\n" + "=" * 60)
         print("Try These Questions to See Poisoning in Action:")
@@ -307,7 +293,7 @@ if __name__ == "__main__":
             if not question:
                 continue
 
-            result = rag.query(question, max_context_chunks=3)
+            result = rag.query(question, max_context_chunks=5)
 
             print("\n" + "=" * 60)
             print("ANSWER:")
@@ -328,5 +314,4 @@ if __name__ == "__main__":
         print(f"\n[ERROR] {e}")
         print("\nMake sure to:")
         print("  1. Run: python create_poisoned_db.py")
-        print("  2. Start Ollama: ollama serve")
-        print(f"  3. Pull model: ollama pull {OLLAMA_MODEL}")
+        print("  2. Set HF_TOKEN: export HF_TOKEN='hf_...'")

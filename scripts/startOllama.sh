@@ -20,7 +20,7 @@ fi
 
 # Start Ollama
 echo "Starting Ollama..."
-nohup ollama serve > /workspaces/ae-day2/ollama.log 2>&1 < /dev/null &
+nohup ollama serve > /workspaces/ae-security/ollama.log 2>&1 < /dev/null &
 
 # Wait a moment for startup
 sleep 3
