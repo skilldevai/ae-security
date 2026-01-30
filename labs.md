@@ -1,7 +1,7 @@
 # Applied AI Engineering for the Enterprise
-## Day 2 - Models and Retrieval Augmented Generation (RAG)
+## Security Workshop
 ## Session labs 
-## Revision 2.1 - 01/27/26
+## Revision 1.0 - 01/30/26
 
 **Follow the startup instructions in the README.md file IF NOT ALREADY DONE!**
 
