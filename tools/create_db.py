@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 # Paths (relative to security_lab/ directory)
 TOOLS_DIR = Path("../tools")
 PDF_DIR = Path("../rag/knowledge_base_pdfs")
-POISONED_DOC = Path("./poisoned_docs/OmniTech_Special_Bulletin.txt")
+POISONED_DOC = Path("../docs/OmniTech_Special_Bulletin.txt")
 CHROMA_PATH = Path("./chroma_poisoned_db")
 COLLECTION_NAME = "pdf_documents"
 EMBED_MODEL = "all-MiniLM-L6-v2"
@@ -137,8 +137,7 @@ def inject_poisoned_chunks():
 
 def main():
     print("=" * 60)
-    print("  POISONED VECTOR DATABASE CREATOR")
-    print("  Demonstrates RAG document poisoning attacks")
+    print("  VECTOR DATABASE CREATOR")
     print("=" * 60)
 
     # ── Step 1: Validate paths ─────────────────────────────────────
@@ -182,13 +181,10 @@ def main():
     print("\n" + "=" * 60)
     print("  DATABASE READY")
     print(f"  Location: {CHROMA_PATH.resolve()}")
-    print(f"  Contains: legitimate docs + poisoned chunks")
     print("=" * 60)
-    print("\nNext steps:")
-    print("  1. Run: python rag_vulnerable.py")
-    print("  2. Ask: 'How do I reset my password?'")
-    print("  3. Observe how poisoned content affects the response")
+
 
 
 if __name__ == "__main__":
     main()
+
