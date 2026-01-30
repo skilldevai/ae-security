@@ -1,7 +1,7 @@
 # Applied AI Engineering for the Enterprise
 ## Security Workshop
 ## Session labs 
-## Revision 1.2 - 01/30/26
+## Revision 1.3 - 01/30/26
 
 **Follow the startup instructions in the README.md file IF NOT ALREADY DONE!**
 
@@ -24,7 +24,7 @@ cd /workspaces/ae-security/rag
 2. First, let's examine the poisoned document that simulates what an attacker might inject into a knowledge base. Open the file and read through it carefully:
 
 ```
-code docs/OmniTech_Special_Bulletin.txt
+code ../docs/OmniTech_Special_Bulletin.txt
 ```
 
 This document looks like a legitimate OmniTech internal memo, but it contains three types of attacks:
