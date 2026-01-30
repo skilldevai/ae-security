@@ -34,13 +34,13 @@ This document looks like a legitimate OmniTech internal memo, but it contains th
 
 <br><br>
 
-3. Now let's build a vector database that contains both the legitimate OmniTech PDFs AND the poisoned document. This simulates an attacker who has managed to insert a malicious document into the knowledge base — a realistic threat in enterprise RAG systems:
+3. Now let's build a vector database that contains both the legitimate OmniTech PDFs AND the poisoned document. This simulates an attacker who has managed to insert a malicious document into the knowledge base — a realistic threat in enterprise RAG systems. We have a python file in the tools directory that will create the Chroma DB vector database for us.
 
 ```
-python create_db.py
+python ../tools/create_db.py
 ```
 
-Watch the output — you'll see the legitimate PDFs indexed first, then the poisoned chunks injected into the same database. The poisoned chunks are given metadata that makes them look like they came from a real PDF (`OmniTech_Security_Bulletin_2024.pdf`).
+Watch the output — you'll see the legitimate PDFs indexed first, then the poisoned chunks injected into the same database. The poisoned chunks are given metadata that makes them look like they came from a real PDF (`OmniTech_Security_Bulletin_2026.pdf`).
 
 <br><br>
 
