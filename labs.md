@@ -1,7 +1,7 @@
 # Applied AI Engineering for the Enterprise
 ## Security Workshop
 ## Session labs 
-## Revision 1.0 - 01/30/26
+## Revision 1.2 - 01/30/26
 
 **Follow the startup instructions in the README.md file IF NOT ALREADY DONE!**
 
@@ -11,14 +11,12 @@
 
 **Purpose: In this lab, we'll explore a critical AI security risk — document poisoning in RAG systems. We'll see how a malicious document injected into the vector database can manipulate RAG outputs to phish users, then implement security hardening to defend against these attacks.**
 
-**Prerequisites: Previous RAG labs should be completed (familiarity with ChromaDB indexing and the basic RAG pipeline).**
-
 <br>
 
-1. From the terminal, change to the *code* directory:
+1. From the terminal, change to the *rag* directory:
 
 ```
-cd /workspaces/ae-security/code
+cd /workspaces/ae-security/rag
 ```
 
 <br><br>
@@ -153,10 +151,10 @@ Again, the poisoned chunks are filtered out, and the answer comes only from the 
 
 <br>
 
-1. From the terminal, make sure you're in the security_lab directory:
+1. From the terminal, make sure you're in the rag directory:
 
 ```
-cd /workspaces/ae-security/code
+cd /workspaces/ae-security/rag
 ```
 
 <br><br>
@@ -292,14 +290,14 @@ The answer should now come only from legitimate, untampered chunks.
 <b>[END OF LAB]</b>
 </p>
 
-**Lab 3 – MCP Authentication, Authorization & Per-Tool Scopes**
+**Lab 4 – MCP Authentication, Authorization & Per-Tool Scopes**
 
 **Purpose: This lab shows how to use an authorization server to issue scoped JWT tokens and how to enforce per-tool scope checks in MCP server middleware. You'll see how different clients can be granted access to different subsets of tools.**
 
-1. Change into the **code** directory in the terminal if not already there.
+1. Change into the **mcp** directory in the terminal if not already there.
 
 ```
-cd /workspaces/ae-security/code
+cd /workspaces/ae-security/mcp
 ```
 <br><br>
 
@@ -435,11 +433,11 @@ python secure_client.py
 <br><br><br>
 
 
-**Lab 4 – MCP Defense in Depth: Rate Limiting, Input Validation & Output Sanitization**
+**Lab 5 – MCP Defense in Depth: Rate Limiting, Input Validation & Output Sanitization**
 
 **Purpose: Building on the JWT authentication from Lab 3, this lab adds three additional security layers to an MCP server: rate limiting to prevent abuse, input validation to block dangerous payloads, output sanitization to prevent sensitive data leakage, and audit logging to track security events.**
 
-1. Look for these files in the **code** subdirectory.
+1. Look for these files in the **mcp** subdirectory.
 
 | **File** | **What to notice** |
 |---|---|
