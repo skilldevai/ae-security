@@ -32,6 +32,8 @@ This document looks like a legitimate OmniTech internal memo, but it contains th
 - **Social Engineering**: Instructions to submit credit card numbers via email for "refund verification"
 - **Prompt Injection**: A hidden `[SYSTEM OVERRIDE]` directive that tries to make the LLM prioritize this document over legitimate ones
 
+![Poisoned doc](./images/ae98.png?raw=true "poisoned doc") 
+
 <br><br>
 
 3. Now let's build a vector database that contains both the legitimate OmniTech PDFs AND the poisoned document. This simulates an attacker who has managed to insert a malicious document into the knowledge base — a realistic threat in enterprise RAG systems. We have a python file in the tools directory that will create the Chroma DB vector database for us.
@@ -42,15 +44,19 @@ python ../tools/create_db.py
 
 Watch the output — you'll see the legitimate PDFs indexed first, then the poisoned chunks injected into the same database. The poisoned chunks are given metadata that makes them look like they came from a real PDF (`OmniTech_Security_Bulletin_2026.pdf`).
 
+![Building vector db](./images/ae99.png?raw=true "building vector db") 
+
 <br><br>
 
-4. Now let's see the attack in action. Run the vulnerable RAG system — this is essentially the same RAG code from Lab 7, with no security defenses:
+4. Now let's see the attack in action. Run the vulnerable RAG system — this is essentially the same RAG code we used before, with no security defenses:
 
 ```
 python rag_vulnerable.py
 ```
 
 You should see the knowledge base statistics, including the poisoned source document mixed in with the legitimate ones.
+
+![loading sources](./images/ae100.png?raw=true "loading sources") 
 
 <br><br>
 
@@ -62,6 +68,8 @@ How do I reset my password?
 
 Watch the **SOURCES** section carefully. You'll likely see the poisoned document (`OmniTech_Security_Bulletin_2024.pdf`) appear alongside the legitimate Account Security Handbook. The LLM's answer may include the phishing URL (`https://omnitech-secure-verify.com/reset`) from the poisoned document — directing users to a fake site to steal their credentials.
 
+![vulnerabilities](./images/ae101.png?raw=true "vulnerabilities") 
+
 <br><br>
 
 6. Now try this question:
@@ -72,6 +80,8 @@ How do I get a refund?
 
 Again, check the sources and the answer. The poisoned document instructs users to email their **full credit card number** to a fake address for "refund verification." The LLM may incorporate this dangerous instruction into its answer because it treats all retrieved context as equally trustworthy.
 
+![vulnerabilities](./images/ae102.png?raw=true "vulnerabilities") 
+
 <br><br>
 
 7. Type `quit` to exit the vulnerable system. Now let's add security defenses. We have a completed hardened version and a skeleton version. Use the diff command to see the security additions:
@@ -79,6 +89,8 @@ Again, check the sources and the answer. The poisoned document instructs users t
 ```
 code -d ../extra/rag_hardened_complete.txt rag_hardened.py
 ```
+
+![building out hardened version](./images/ae103.png?raw=true "building out hardened version") 
 
 <br><br>
 
@@ -89,6 +101,8 @@ code -d ../extra/rag_hardened_complete.txt rag_hardened.py
    - **Output scanning**: The LLM's response is checked for untrusted URLs, suspicious email domains, and requests for sensitive data (credit cards, passwords).
 
 Also note the `filter_chunks()` method — this is the main security checkpoint that applies all checks to each retrieved chunk and produces a clear report of what was blocked and why.
+
+![securityguard class](./images/ae104.png?raw=true "securityguard class") 
 
 <br><br>
 
@@ -104,6 +118,8 @@ python rag_hardened.py
 
 Notice in the startup output how the source documents are now labeled `[TRUSTED]` or `[UNKNOWN]`.
 
+![TRUSTED sources](./images/ae105.png?raw=true "TRUSTED sources") 
+
 <br><br>
 
 11. Ask the same questions from before:
@@ -114,6 +130,8 @@ How do I reset my password?
 
 This time, watch the **SECURITY GUARD** output. You'll see the poisoned chunks get **[BLOCKED]** with clear reasons — untrusted source, injection patterns detected. Only chunks from the legitimate Account Security Handbook pass through. The answer should now contain only the real password reset procedure, with no phishing URLs.
 
+![BLOCKED content](./images/ae106.png?raw=true "BLOCKED content") 
+
 Try the refund question too:
 
 ```
@@ -122,9 +140,13 @@ How do I get a refund?
 
 Again, the poisoned chunks are filtered out, and the answer comes only from the legitimate Returns Policy document.
 
+![filtered chunks](./images/ae107.png?raw=true "filtered chunks") 
+
 <br><br>
 
 12. Type `report` to see a summary of all security events that occurred during your session, then type `quit` to exit.
+
+![report](./images/ae108.png?raw=true "report") 
 
 <br><br>
 
