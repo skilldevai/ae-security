@@ -1,34 +1,38 @@
 #!/usr/bin/env python3
 """
-RAG System - VULNERABLE VERSION (No Security Hardening)
+RAG System - VULNERABLE VERSION (Ollama / llama3.2:1b)
 ────────────────────────────────────────────────────────────────────
-This is the standard Lab 7 RAG implementation pointed at a database
-that contains poisoned documents. It has NO security defenses.
+Same as rag_vulnerable.py but uses local Ollama with the smaller
+llama3.2:1b model. The smaller model is more susceptible to prompt
+injection from poisoned documents — useful for demonstrating how
+the phishing URL appears in responses without any prompt coaxing.
 
-Run this FIRST to see how document poisoning can manipulate RAG output.
-Then compare with rag_hardened.py to see security defenses in action.
+Compare the output of this script with rag_vulnerable.py (HuggingFace
+/ Llama-3.1-8B-Instruct) to see how model size affects susceptibility
+to document poisoning attacks.
 """
 
 import logging
 import os
 from typing import List, Dict
 from pathlib import Path
+import requests
 import json
 
 from chromadb import PersistentClient
 from chromadb.config import Settings, DEFAULT_TENANT, DEFAULT_DATABASE
-from huggingface_hub import InferenceClient
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("rag-vulnerable")
+logger = logging.getLogger("rag-vulnerable-ollama")
 
 # ═══════════════════════════════════════════════════════════════════
 # Configuration
 # ═══════════════════════════════════════════════════════════════════
 
-HF_TOKEN = os.environ.get("HF_TOKEN", "")
-HF_MODEL = os.environ.get("HF_MODEL", "meta-llama/Llama-3.1-8B-Instruct")
-HF_CLIENT = InferenceClient(token=HF_TOKEN) if HF_TOKEN else None
+OLLAMA_API_URL = "http://localhost:11434/api/generate"
+# Hardcoded to 1b — the small model is more susceptible to prompt injection,
+# which is the point of this demo. Ignores OLLAMA_MODEL env var intentionally.
+OLLAMA_MODEL = "llama3.2:1b"
 
 
 class RAGSystem:
@@ -71,17 +75,22 @@ class RAGSystem:
     # STEP 1: RETRIEVE - Find relevant chunks (no filtering)
     # ═══════════════════════════════════════════════════════════════
 
-    def retrieve(self, query: str, max_results: int = 3) -> List[Dict]:
+    def retrieve(self, query: str, max_results: int = 5) -> List[Dict]:
         """Retrieve relevant chunks - NO security checks on content"""
         try:
             logger.info(f"[RETRIEVE] Searching for relevant context...")
 
+            # VULNERABILITY: Retrieves extra chunks then deduplicates by source,
+            # keeping only the best chunk per document. This gives every source
+            # equal representation — including poisoned documents that would
+            # otherwise be outnumbered by legitimate ones.
             results = self.collection.query(
                 query_texts=[query],
-                n_results=max_results,
+                n_results=max_results * 2,
                 include=["documents", "metadatas", "distances"]
             )
 
+            seen_sources = {}
             retrieved_chunks = []
 
             if results['documents'] and len(results['documents'][0]) > 0:
@@ -90,17 +99,26 @@ class RAGSystem:
                     metadata = results['metadatas'][0][i]
                     distance = results['distances'][0][i]
                     score = 1.0 / (1.0 + distance)
+                    source = metadata.get('source', 'unknown')
+
+                    # Keep only the best chunk per source document
+                    if source in seen_sources:
+                        continue
+                    seen_sources[source] = True
 
                     retrieved_chunks.append({
                         "content": document,
-                        "source": metadata.get('source', 'unknown'),
+                        "source": source,
                         "page": metadata.get('page', 'unknown'),
                         "type": metadata.get('type', 'text'),
                         "score": score
                     })
 
-                    logger.info(f"  [RETRIEVE] Found: {metadata.get('source')} "
+                    logger.info(f"  [RETRIEVE] Found: {source} "
                                 f"(page {metadata.get('page')}) - Score: {score:.3f}")
+
+                    if len(retrieved_chunks) >= max_results:
+                        break
 
             return retrieved_chunks
 
@@ -116,8 +134,14 @@ class RAGSystem:
         """Build prompt - NO content scanning or sanitization"""
         logger.info("[AUGMENT] Building prompt with context...")
 
+        # VULNERABILITY: Chunks are presented in reverse relevance order.
+        # This means lower-scored (potentially poisoned) chunks appear FIRST
+        # in the context, exploiting LLM primacy bias — models pay more
+        # attention to content that appears earlier in the prompt.
+        ordered_chunks = list(reversed(context_chunks))
+
         context_text = ""
-        for i, chunk in enumerate(context_chunks, 1):
+        for i, chunk in enumerate(ordered_chunks, 1):
             context_text += f"\n--- Context {i} (Source: {chunk['source']}, Page: {chunk['page']}) ---\n"
             context_text += chunk['content']
             context_text += "\n"
@@ -147,27 +171,35 @@ ANSWER:"""
 
     def generate(self, prompt: str) -> str:
         """Generate answer - NO output validation"""
-        logger.info(f"[GENERATE] Querying {HF_MODEL} via HuggingFace Inference API...")
-
-        if not HF_CLIENT:
-            return "Error: HF_TOKEN not set. Export your HuggingFace API token: export HF_TOKEN='hf_...'"
+        logger.info(f"[GENERATE] Querying {OLLAMA_MODEL} via Ollama...")
 
         try:
-            response = HF_CLIENT.chat_completion(
-                model=HF_MODEL,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.3,
-                top_p=0.9,
-                max_tokens=500,
-            )
-            answer = response.choices[0].message.content.strip()
-            logger.info("[GENERATE] Answer generated successfully")
-            return answer
+            payload = {
+                "model": OLLAMA_MODEL,
+                "prompt": prompt,
+                "stream": False,
+                "options": {
+                    "temperature": 0.3,
+                    "top_p": 0.9,
+                    "num_predict": 500
+                }
+            }
 
+            response = requests.post(OLLAMA_API_URL, json=payload, timeout=300)
+
+            if response.status_code == 200:
+                result = response.json()
+                answer = result.get('response', '').strip()
+                logger.info("[GENERATE] Answer generated successfully")
+                return answer
+            else:
+                return f"Error: Ollama API error {response.status_code}"
+
+        except requests.exceptions.ConnectionError:
+            return "Error: Could not connect to Ollama. Make sure Ollama is running: ollama serve"
+        except requests.exceptions.Timeout:
+            return "Error: Ollama request timed out"
         except Exception as e:
-            error_msg = str(e)
-            if "503" in error_msg or "loading" in error_msg.lower():
-                return f"Error: Model is loading on HuggingFace. Please retry in a moment. ({error_msg})"
             return f"Error: Generation failed: {e}"
 
     # ═══════════════════════════════════════════════════════════════
@@ -182,7 +214,6 @@ ANSWER:"""
         logger.info("=" * 60)
 
         # STEP 1: RETRIEVE
-        # WARNING: No content validation - poisoned chunks pass through
         context_chunks = self.retrieve(question, max_results=max_context_chunks)
 
         if not context_chunks:
@@ -193,11 +224,9 @@ ANSWER:"""
             }
 
         # STEP 2: AUGMENT
-        # WARNING: No prompt injection scanning on context
         prompt = self.build_prompt(question, context_chunks)
 
         # STEP 3: GENERATE
-        # WARNING: No output scanning for malicious content
         answer = self.generate(prompt)
 
         response = {
@@ -243,9 +272,9 @@ ANSWER:"""
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("  RAG System - VULNERABLE VERSION")
+    print("  RAG System - VULNERABLE VERSION (Ollama)")
     print("  (No Security Hardening)")
-    print(f"  Using ChromaDB + {HF_MODEL} (HuggingFace API)")
+    print(f"  Using ChromaDB + {OLLAMA_MODEL} (Local Ollama)")
     print("=" * 60)
     print("\n  WARNING: This RAG system has NO defenses against")
     print("  document poisoning or prompt injection attacks.")
@@ -263,15 +292,22 @@ if __name__ == "__main__":
         for source, count in stats.get('sources', {}).items():
             print(f"    - {source}: {count} chunks")
 
-        # Check HuggingFace
+        # Check Ollama
         print("\n" + "=" * 60)
-        print("Checking HuggingFace Connection...")
+        print("Checking Ollama Connection...")
         print("=" * 60)
-        if HF_CLIENT:
-            print(f"[OK] HF_TOKEN is set")
-            print(f"[OK] Model: {HF_MODEL}")
-        else:
-            print("[ERROR] HF_TOKEN not set. Run: export HF_TOKEN='hf_...'")
+        try:
+            response = requests.get("http://localhost:11434/api/tags", timeout=2)
+            if response.status_code == 200:
+                print("[OK] Ollama is running")
+                models = response.json().get('models', [])
+                model_names = [m.get('name', '') for m in models]
+                if OLLAMA_MODEL in model_names or any(OLLAMA_MODEL in name for name in model_names):
+                    print(f"[OK] Model '{OLLAMA_MODEL}' is available")
+                else:
+                    print(f"[!!] Model '{OLLAMA_MODEL}' not found. Run: ollama pull {OLLAMA_MODEL}")
+        except Exception:
+            print("[ERROR] Ollama not running. Start with: ollama serve")
 
         print("\n" + "=" * 60)
         print("Try These Questions to See Poisoning in Action:")
@@ -314,4 +350,5 @@ if __name__ == "__main__":
         print(f"\n[ERROR] {e}")
         print("\nMake sure to:")
         print("  1. Run: python create_poisoned_db.py")
-        print("  2. Set HF_TOKEN: export HF_TOKEN='hf_...'")
+        print("  2. Start Ollama: ollama serve")
+        print(f"  3. Pull model: ollama pull {OLLAMA_MODEL}")

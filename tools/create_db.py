@@ -113,7 +113,7 @@ def inject_poisoned_chunks():
     ids = [f"poisoned_chunk_{i}" for i in range(len(chunks))]
     metadatas = [
         {
-            "source": "OmniTech_Security_Bulletin_2024.pdf",  # Fake PDF name
+            "source": "OmniTech_Security_Bulletin_2026.pdf",  # Fake PDF name
             "page": i + 1,
             "type": "text",
             "chunk_index": i,
