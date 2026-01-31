@@ -506,6 +506,10 @@ code -d ../extra/auth_server_solution.txt auth_server.py
 
    Merge each section by clicking the arrows in the diff view. Save and close the tab when done.
 
+
+![merging](./images/ae118.png?raw=true "merging") 
+
+
 <br><br>
 
 
@@ -522,6 +526,9 @@ code -d ../extra/secure_server_solution.txt secure_server.py
 
    Merge and save.
 
+![merging](./images/ae119.png?raw=true "merging") 
+
+
 <br><br>
 
 
@@ -536,6 +543,8 @@ code -d ../extra/secure_client_solution.txt secure_client.py
    - **Two test runs**: First as `full-client` (all tools succeed), then as `limited-client` (only `add` succeeds)
 
    Merge and save.
+
+![merging](./images/ae120.png?raw=true "merging") 
 
 <br><br>
 
