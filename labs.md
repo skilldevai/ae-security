@@ -660,6 +660,10 @@ python secure_client.py
 
 2. For the *v2* version of the authorization server, we are adjusting the tool scopes. You can use our usual diff command to see the differences. **You do NOT need to make any changes/merges.** When done reviewing, just close the tab at the top without any merges.
 
+```
+code -d auth_server_v2.py auth_server.py
+```
+
 ![merging server](./images/ae132.png?raw=true "merging server") 
 
 <br><br>
@@ -736,11 +740,11 @@ python hardened_server.py
 ```
 
    You should see startup output showing the active security controls:
-   - Rate limit: 5 tool calls per 60s
+   - Rate limit: 20 tool calls per 60s
    - Input validation patterns: 4
    - Output sanitization patterns: 3
 
-![hardened server running](./images/ae130.png?raw=true "hardened server running") 
+![hardened server running](./images/ae135.png?raw=true "hardened server running") 
 
 <br><br>
 
@@ -806,6 +810,8 @@ curl -s -X POST http://127.0.0.1:8000/mcp \
 ```
 
    Both should return `400` with a "blocked dangerous pattern" message.
+
+![hardened client running](./images/ae136.png?raw=true "hardened client running") 
 
 <br><br>
 
