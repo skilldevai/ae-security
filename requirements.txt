@@ -40,3 +40,10 @@ langchain-ollama>=1.0.1
 
 # Data handling
 py2neo>=2021.2.4
+
+# Toolkits
+sentence-transformers>=5.2.2
+fastapi>=0.128.0
+python-jose>=3.5.0
+python-multipart>=0.0.22
+fastmcp>=2.14.4
