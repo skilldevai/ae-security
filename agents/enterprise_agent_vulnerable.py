@@ -5,10 +5,9 @@ This agent has over-provisioned tools and no security controls.
 """
 
 import os
-from smolagents import ToolCallingAgent, InferenceClientModel, tool
+from smolagents import ToolCallingAgent, LiteLLMModel, tool
 
-HF_TOKEN = os.environ.get("HF_TOKEN", "")
-HF_MODEL = os.environ.get("HF_MODEL", "meta-llama/Llama-3.1-8B-Instruct")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2:1b")
 
 # ========== SIMULATED EMPLOYEE DATABASE ==========
 
@@ -123,21 +122,33 @@ def main():
     print("\nOmniTech HR Benefits Assistant")
     print("Type 'quit' to exit.\n")
 
-    if not HF_TOKEN:
-        print("[ERROR] HF_TOKEN not set. Run: export HF_TOKEN='hf_...'")
+    # NOTE: If Ollama fails due to memory constraints, you can set 
+    # OLLAMA_MODEL to a smaller model or increase container resources
+    print(f"[INFO] Using Ollama model: {OLLAMA_MODEL}")
+    print("[INFO] Note: Agent requires ~2-4GB RAM for llama3.2:1b")
+    print()
+    
+    try:
+        llm = LiteLLMModel(
+            model_id=f"ollama/{OLLAMA_MODEL}",
+            api_base="http://localhost:11434",
+        )
+
+        # VULNERABILITY: Agent has ALL 5 tools, including dangerous ones
+        agent = ToolCallingAgent(
+            tools=[lookup_benefits, check_pto_balance, update_salary, export_employee_data, send_company_email],
+            model=llm,
+            instructions=SYSTEM_PROMPT,
+            max_steps=3,  # Limit steps to prevent hanging on final response
+        )
+    except Exception as e:
+        print(f"[ERROR] Failed to initialize agent: {e}")
+        print("\nTroubleshooting:")
+        print("1. Ensure Ollama is running: curl http://localhost:11434/api/tags")
+        print("2. Try a smaller model: export OLLAMA_MODEL=llama3.2:1b")
+        print("3. Check container resources (agent needs ~2-4GB RAM)")
+        print("4. For workshop demos, consider using recorded outputs")
         return
-
-    llm = InferenceClientModel(
-        model_id=HF_MODEL,
-        token=HF_TOKEN,
-    )
-
-    # VULNERABILITY: Agent has ALL 5 tools, including dangerous ones
-    agent = ToolCallingAgent(
-        tools=[lookup_benefits, check_pto_balance, update_salary, export_employee_data, send_company_email],
-        model=llm,
-        system_prompt=SYSTEM_PROMPT,
-    )
 
     while True:
         user_input = input("You: ").strip()
@@ -151,7 +162,13 @@ def main():
             response = agent.run(user_input)
             print(f"Assistant: {response}\n")
         except Exception as e:
-            print(f"Assistant: Sorry, I encountered an error: {e}\n")
+            # Check if tools were executed despite the error
+            error_str = str(e)
+            if "EXPORTED" in error_str or "EMAIL SENT" in error_str or "UPDATED" in error_str:
+                print(f"\n⚠️  SECURITY BREACH DETECTED ⚠️")
+                print(f"Although the agent encountered an error, DANGEROUS TOOLS WERE EXECUTED.")
+                print(f"Check the output above for data exfiltration or unauthorized actions.\n")
+            print(f"Assistant: Error occurred: {e}\n")
 
 
 if __name__ == "__main__":
