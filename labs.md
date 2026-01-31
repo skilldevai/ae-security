@@ -163,7 +163,7 @@ Again, the poisoned chunks are filtered out, and the answer comes only from the 
 <p align="center">
 <b>[END OF LAB]</b>
 </p>
-</content>
+<br><br>
 
 **Lab 2: Supervisor Multi-Agent Pattern with Budgets**
 
