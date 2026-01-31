@@ -652,14 +652,19 @@ python secure_client.py
 
 | **File** | **What to notice** |
 |---|---|
-| **`auth_server.py`** | Provided complete (same pattern as Lab 3). Issues tokens for the hardened server's tools. |
+| **`auth_server_v2.py`** | Provided complete (same pattern as Lab 4). Issues tokens for the hardened server's tools. |
 | **`hardened_server.py`** | Skeleton – has JWT auth filled in, but rate limiting, input validation, and output sanitization are stubs. |
 | **`hardened_client.py`** | Skeleton – has basic tool calls, but no security-testing scenarios. |
 
 <br><br>
 
+2. For the *v2* version of the authorization server, we are adjusting the tool scopes. You can use our usual diff command to see the differences. **You do NOT need to make any changes/merges.** When done reviewing, just close the tab at the top without any merges.
 
-2. Open the **hardened server** diff to see all the defense-in-depth security layers:
+![merging server](./images/ae132.png?raw=true "merging server") 
+
+<br><br>
+
+3. Open the **hardened server** diff to see all the defense-in-depth security layers:
 
 ```
 code -d ../extra/hardened_server_solution.txt hardened_server.py
@@ -674,10 +679,12 @@ code -d ../extra/hardened_server_solution.txt hardened_server.py
 
    Merge all sections and save.
 
+![merging server](./images/ae127.png?raw=true "merging server") 
+
 <br><br>
 
 
-3. Now open the **hardened client** diff:
+4. Now open the **hardened client** diff:
 
 ```
 code -d ../extra/hardened_client_solution.txt hardened_client.py
@@ -691,23 +698,29 @@ code -d ../extra/hardened_client_solution.txt hardened_client.py
 
    Merge and save.
 
+![merging client](./images/ae134.png?raw=true "merging client") 
+
 <br><br>
 
 
-4. Start the **authorization server** (provided complete for this lab):
+5. Start the **authorization server** (provided complete for this lab):
 
 ```
-python auth_server.py
+python auth_server_v2.py
 ```
 
    Leave it running in this terminal.
 
+![auth server running](./images/ae133.png?raw=true "auth server running") 
+
 <br><br>
 
 
-5. Open a **new terminal** and get a token:
+6. Open a **new terminal**, change to *mcp* and get a token:
 
 ```
+cd mcp
+
 export TOKEN=$(
   curl -s -X POST \
        -d "username=demo-client&password=demopass" \
@@ -727,12 +740,16 @@ python hardened_server.py
    - Input validation patterns: 4
    - Output sanitization patterns: 3
 
+![hardened server running](./images/ae130.png?raw=true "hardened server running") 
+
 <br><br>
 
 
-6. Open **another new terminal** and run the **hardened client**:
+7. Open **another new terminal**, cd to *mcp* and run the **hardened client**:
 
 ```
+cd mcp
+
 python hardened_client.py
 ```
 
@@ -750,7 +767,7 @@ python hardened_client.py
 <br><br>
 
 
-7. Continue watching the output:
+8. Continue watching the output:
 
    **Scenario 3 – Rate Limiting**: Six rapid requests are sent via raw HTTP. Requests 1-5 return `200 OK`, but request 6 returns `429 BLOCKED`. The server terminal shows an `[AUDIT] RATE_LIMITED` entry.
 
@@ -758,10 +775,12 @@ python hardened_client.py
 
    **Scenario 5 – Audit Log**: The `get_audit_log` tool returns a chronological record of all security events – tool calls, rate limit hits, and blocked inputs. In production, this would feed into a SIEM or alerting system.
 
+![hardened client running](./images/ae131.png?raw=true "hardened client running") 
+
 <br><br>
 
 
-8. Look at the **server terminal** to see the audit trail printed in real time. Each entry shows:
+9. Look at the **server terminal** to see the audit trail printed in real time. Each entry shows:
    - Timestamp
    - Client identity (from the JWT `sub` claim)
    - Action type (TOOL_CALL, RATE_LIMITED, INPUT_BLOCKED)
@@ -770,7 +789,7 @@ python hardened_client.py
 <br><br>
 
 
-9. (Optional) You can experiment further with curl. Try sending your own dangerous payloads:
+10. (Optional) You can experiment further with curl. Try sending your own dangerous payloads:
 
 ```
 # Path traversal attempt
@@ -791,7 +810,7 @@ curl -s -X POST http://127.0.0.1:8000/mcp \
 <br><br>
 
 
-10. **Security layers summary.** Across Labs 3 and 4, you've implemented a defense-in-depth architecture for MCP:
+11. **Security layers summary.** Across Labs 4 and 5, you've implemented a defense-in-depth architecture for MCP:
 
 | **Layer** | **What it does** | **Lab** |
 |---|---|---|
@@ -806,13 +825,11 @@ curl -s -X POST http://127.0.0.1:8000/mcp \
 
 <br><br>
 
-11. When you're done, stop (Ctrl+C) the running authorization server and the hardened MCP server.
+12. When you're done, stop (Ctrl+C) the running authorization server and the hardened MCP server.
 
 <p align="center">
 <b>[END OF LAB]</b>
 </p>
-
-
 
 
 
