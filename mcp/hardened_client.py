@@ -7,6 +7,7 @@ from fastmcp import Client
 
 AUTH_SERVER   = "http://127.0.0.1:9000/token"
 MCP_ENDPOINT  = "http://127.0.0.1:8000/mcp/"
+CALL_TIMEOUT  = 5.0  # Timeout for tool calls (FastMCP client can hang)
 
 
 async def get_token() -> str:
@@ -24,22 +25,53 @@ async def main():
     token = await get_token()
     print("Token acquired from auth server.\n")
 
-    # ── Scenario 1: Normal tool call ──
     print("=" * 50)
-    print("Scenario 1: Normal Tool Call")
+    print("Lab 5: Defense in Depth - Security Controls Demo")
     print("=" * 50)
-    async with Client(MCP_ENDPOINT, auth=token) as c:
-        tools = await c.list_tools()
-        print(f"Available tools: {[t.name for t in tools]}")
 
-        result = await c.call_tool("add", {"a": 3, "b": 4})
-        print(f"add(3, 4) = {result}")
+    # Use a single Client connection for Scenarios 1, 2, and 5
+    # This avoids hitting rate limits from multiple connection initializations
+    try:
+        async with Client(MCP_ENDPOINT, auth=token) as c:
+            # ── Scenario 1: Normal tool call ──
+            print("\n" + "=" * 50)
+            print("=" * 50)
+            tools = await c.list_tools()
+            print(f"Available tools: {[t.name for t in tools]}")
 
-    # ── Scenario 2: Customer lookup ──
+            try:
+            except asyncio.TimeoutError:
+                print("add(3, 4) -> TIMEOUT")
 
-        result = await c.call_tool("lookup_customer", {"name": "bob"})
-        print(f"\nBob's record:\n{result}")
-        print("\n  ^ Notice: password in notes is also redacted!")
+            print("\n" + "=" * 50)
+            print("Scenario 2: Customer Lookup (Output Sanitization)")
+            print("=" * 50)
+            try:
+            except asyncio.TimeoutError:
+                print("Customer lookup -> TIMEOUT")
+
+            # ── Scenario 5: View audit log ──
+            print("\n" + "=" * 50)
+            print("Scenario 5: Audit Log (Before Rate Limit Test)")
+            print("=" * 50)
+            try:
+                result = await asyncio.wait_for(
+                    c.call_tool("get_audit_log", {"count": 10}),
+                    timeout=CALL_TIMEOUT
+                )
+                print(f"Recent audit entries:\n{result}")
+            except asyncio.TimeoutError:
+                print("get_audit_log -> TIMEOUT")
+
+    except httpx.HTTPStatusError as e:
+        # FastMCP client bug: errors during cleanup crash on context exit
+        if e.response.status_code == 429:
+            print(f"\n⚠️  Rate limit hit. The server limits requests to prevent abuse.")
+            print("This is expected behavior - the defense is working!")
+        elif e.response.status_code != 403:
+            raise
+    except Exception as e:
+        print(f"Error: {e}")
 
     # ── Scenario 3: Rate limiting test (raw HTTP) ──
             status = "OK" if r.status_code == 200 else f"BLOCKED ({r.status_code})"
@@ -60,10 +92,8 @@ async def main():
         if r.status_code == 400:
             print(f"  Server says: {r.json().get('detail', '')}")
 
-    # ── Scenario 5: View audit log ──
+
     print("\n" + "=" * 50)
-    print("Scenario 5: Audit Log")
-    print("=" * 50)
 
 
 if __name__ == "__main__":

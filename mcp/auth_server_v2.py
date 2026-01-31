@@ -1,6 +1,6 @@
-# auth_server.py  –  Lab 3b: Defense in Depth
+# auth_server.py  –  Lab 5: Defense in Depth
 #
-# This is the same auth server pattern from Lab 3, configured for the
+# This is the same auth server pattern from Lab 4, configured for the
 # hardened server's tools.  It is provided complete – the focus of this
 # lab is the hardened_server.py and hardened_client.py files.
 
@@ -10,11 +10,12 @@ from fastapi.security import OAuth2PasswordRequestForm
 from jose import jwt, JWTError
 import uvicorn
 
-SECRET_KEY = "mcp-lab-secret"
+SECRET_KEY = "mcp-lab-secret"          # symmetric key shared with the MCP server
 ALGORITHM  = "HS256"
 AUDIENCE   = "mcp-lab"
-EXPIRES_IN = 3600
+EXPIRES_IN = 3600                      # 1 hour
 
+# 1) Client registry – each client gets specific tool scopes
 _fake_clients = {
     "demo-client": {
         "client_secret": "demopass",
@@ -27,9 +28,10 @@ _fake_clients = {
     }
 }
 
-app = FastAPI(title="MCP Lab – Auth Server (Lab 3b)")
+app = FastAPI(title="MCP Lab – Auth Server")
 
 
+# 2) Create a JWT that carries the client's allowed scopes
 def _create_access_token(sub: str, scopes: list[str]) -> str:
     now = datetime.utcnow()
     payload = {
@@ -44,10 +46,12 @@ def _create_access_token(sub: str, scopes: list[str]) -> str:
 
 @app.post("/token")
 def token(form: OAuth2PasswordRequestForm = Depends()):
+    """OAuth-style form grant (client_id + secret) -> {access_token, expires_in}"""
     client = _fake_clients.get(form.username)
     if not client or client["client_secret"] != form.password:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Invalid client credentials")
+    # 3) Token carries the client's allowed scopes
     access_token = _create_access_token(form.username, client["scopes"])
     return {
         "access_token": access_token,
@@ -58,6 +62,7 @@ def token(form: OAuth2PasswordRequestForm = Depends()):
 
 @app.post("/introspect")
 def introspect(token: str = Body(..., embed=True)):
+    """RFC 7662-style introspection – reveals token contents including scopes."""
     try:
         payload = jwt.decode(token, SECRET_KEY,
                              algorithms=[ALGORITHM], audience=AUDIENCE)

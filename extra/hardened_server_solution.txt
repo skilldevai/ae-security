@@ -30,7 +30,7 @@ AUDIENCE   = "mcp-lab"
 # ═══════════════════════════════════════════════════════════════
 # Rate Limiting Configuration
 # ═══════════════════════════════════════════════════════════════
-RATE_LIMIT_MAX    = 5       # max tool calls per window
+RATE_LIMIT_MAX    = 20      # max tool calls per window (increased for demo with multiple Client connections)
 RATE_LIMIT_WINDOW = 60      # window in seconds
 _request_log = defaultdict(list)
 

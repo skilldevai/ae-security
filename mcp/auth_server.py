@@ -1,4 +1,4 @@
-# auth_server.py  –  Lab 3: Auth + Per-Tool Scopes
+# auth_server.py  –  Lab 4: Auth + Per-Tool Scopes
 #
 # FastAPI >= 0.110, python-jose, uvicorn
 # Issues + introspects HS256-signed JWTs with per-tool scopes
@@ -18,11 +18,11 @@ EXPIRES_IN = 3600                      # 1 hour
 _fake_clients = {
     "full-client": {
         "client_secret": "fullpass",
-        "scopes": []
+        "scopes": ["tools:add", "tools:multiply", "tools:divide"]
     },
     "limited-client": {
         "client_secret": "limitedpass",
-        "scopes": []
+        "scopes": ["tools:add"]
     }
 }
 
@@ -34,6 +34,7 @@ def _create_access_token(sub: str, scopes: list[str]) -> str:
     now = datetime.utcnow()
     payload = {
         "sub": sub,
+        "scope": " ".join(scopes),
         "aud": AUDIENCE,
         "iat": now,
         "exp": now + timedelta(seconds=EXPIRES_IN),
@@ -59,7 +60,7 @@ def token(form: OAuth2PasswordRequestForm = Depends()):
 
 @app.post("/introspect")
 def introspect(token: str = Body(..., embed=True)):
-    """RFC 7662-style introspection – reveals token contents."""
+    """RFC 7662-style introspection – reveals token contents including scopes."""
     try:
         payload = jwt.decode(token, SECRET_KEY,
                              algorithms=[ALGORITHM], audience=AUDIENCE)
@@ -68,6 +69,7 @@ def introspect(token: str = Body(..., embed=True)):
     return {
         "active": True,
         "sub": payload["sub"],
+        "scope": payload.get("scope", ""),
         "exp": payload["exp"]
     }
 
