@@ -5,13 +5,12 @@ Merge from ../extra/enterprise_agent_secure_lab.txt to complete all 5 security l
 """
 
 import os
-from smolagents import ToolCallingAgent, InferenceClientModel, tool
+from smolagents import ToolCallingAgent, LiteLLMModel, tool
 import re
 import json
 import datetime
 
-HF_TOKEN = os.environ.get("HF_TOKEN", "")
-HF_MODEL = os.environ.get("HF_MODEL", "meta-llama/Llama-3.1-8B-Instruct")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2:1b")
 
 # ========== SIMULATED EMPLOYEE DATABASE ==========
 
@@ -93,21 +92,26 @@ def main():
     print("\nOmniTech HR Benefits Assistant (Secure)")
     print("Type 'quit' to exit.\n")
 
-    if not HF_TOKEN:
-        print("[ERROR] HF_TOKEN not set. Run: export HF_TOKEN='hf_...'")
+    print(f"[INFO] Using Ollama model: {OLLAMA_MODEL}")
+    print("[INFO] Note: Small models may struggle with tool arguments")
+    print()
+
+    try:
+        llm = LiteLLMModel(
+            model_id=f"ollama/{OLLAMA_MODEL}",
+            api_base="http://localhost:11434",
+        )
+
+        # LEAST PRIVILEGE: Only read-only benefits and PTO tools
+        agent = ToolCallingAgent(
+            tools=[lookup_benefits, check_pto_balance],
+            model=llm,
+            instructions=SYSTEM_PROMPT,
+            max_steps=3,  # Limit steps to prevent hanging on final response
+        )
+    except Exception as e:
+        print(f"[ERROR] Failed to initialize agent: {e}")
         return
-
-    llm = InferenceClientModel(
-        model_id=HF_MODEL,
-        token=HF_TOKEN,
-    )
-
-    # LEAST PRIVILEGE: Only read-only benefits and PTO tools
-    agent = ToolCallingAgent(
-        tools=[lookup_benefits, check_pto_balance],
-        model=llm,
-        system_prompt=SYSTEM_PROMPT,
-    )
 
     while True:
         user_input = input("You: ").strip()

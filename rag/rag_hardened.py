@@ -54,12 +54,41 @@ class SecurityGuard:
     """
 
     # ── Prompt injection patterns ──────────────────────────────────
+    # These regex patterns detect common prompt injection techniques
+    # found in poisoned documents
+    INJECTION_PATTERNS = [
+        (r'(?i)ignore\s+(all\s+)?previous\s+instructions', "Prompt override attempt"),
+        (r'(?i)disregard\s+(all\s+)?previous', "Prompt override attempt"),
+        (r'(?i)system\s+override', "System override attempt"),
+        (r'(?i)you\s+are\s+now', "Role reassignment attempt"),
+        (r'(?i)new\s+instructions?\s*:', "Instruction injection"),
+        (r'(?i)forget\s+(everything|all)', "Memory wipe attempt"),
+        (r'(?i)AI\s+assistant\s+directive', "AI directive injection"),
+        (r'(?i)\[SYSTEM\s*(OVERRIDE|NOTE|UPDATE)\]', "Bracketed system command"),
+        (r'(?i)supersede[s]?\s+(all\s+)?previous(ly)?', "Authority override claim"),
+        (r'(?i)prioritize\s+(this|information\s+from\s+this)', "Priority manipulation"),
+    ]
 
     # ── Trusted document sources (allowlist) ───────────────────────
+    # Only these documents are considered legitimate knowledge sources
+    TRUSTED_SOURCES = [
+        "OmniTech_Returns_Policy_2024.pdf",
+        "OmniTech_Global_Shipping_Logistics.pdf",
+        "OmniTech_Account_Security_Handbook.pdf",
+        "OmniTech_Device_Troubleshooting_Manual.pdf",
+    ]
 
     # ── Known legitimate domains ───────────────────────────────────
+    # URLs/emails with these domains are considered safe in output
+    TRUSTED_DOMAINS = [
+        "omnitech.com",
+        "www.omnitech.com",
+        "support.omnitech.com",
+    ]
 
     # ── Minimum relevance score ────────────────────────────────────
+    # Chunks below this threshold are discarded (low confidence)
+    MIN_RELEVANCE_SCORE = 0.30
 
     def __init__(self):
         """Initialize SecurityGuard with empty security log"""
@@ -80,8 +109,23 @@ class SecurityGuard:
             (is_safe, list_of_warnings)
             is_safe=True means no injection found
         """
-        # TODO: Implement injection pattern scanning
-        pass
+        warnings = []
+
+        for pattern, description in self.INJECTION_PATTERNS:
+            if re.search(pattern, text):
+                warnings.append(f"INJECTION: {description} — matched: '{pattern}'")
+
+        is_safe = len(warnings) == 0
+
+        if not is_safe:
+            self.security_log.append({
+                "check": "injection_scan",
+                "result": "BLOCKED",
+                "warnings": warnings,
+                "text_preview": text[:100] + "..."
+            })
+
+        return is_safe, warnings
 
     def verify_source(self, source: str) -> bool:
         """
@@ -97,8 +141,17 @@ class SecurityGuard:
         bool
             True if the source is trusted
         """
-        # TODO: Implement source allowlist verification
-        pass
+        is_trusted = source in self.TRUSTED_SOURCES
+
+        if not is_trusted:
+            self.security_log.append({
+                "check": "source_verification",
+                "result": "BLOCKED",
+                "source": source,
+                "reason": f"Source '{source}' is not in the trusted allowlist"
+            })
+
+        return is_trusted
 
     def check_relevance(self, score: float) -> bool:
         """
@@ -114,8 +167,18 @@ class SecurityGuard:
         bool
             True if the score is above the threshold
         """
-        # TODO: Implement relevance threshold check
-        pass
+        meets_threshold = score >= self.MIN_RELEVANCE_SCORE
+
+        if not meets_threshold:
+            self.security_log.append({
+                "check": "relevance_threshold",
+                "result": "BLOCKED",
+                "score": score,
+                "threshold": self.MIN_RELEVANCE_SCORE,
+                "reason": f"Score {score:.3f} below threshold {self.MIN_RELEVANCE_SCORE}"
+            })
+
+        return meets_threshold
 
     def scan_output(self, text: str) -> Tuple[bool, List[str]]:
         """
@@ -131,9 +194,45 @@ class SecurityGuard:
         Tuple[bool, List[str]]
             (is_safe, list_of_warnings)
         """
-        # TODO: Implement output scanning for suspicious URLs, emails,
-        # and requests for sensitive data
-        pass
+        warnings = []
+
+        # Check for URLs that don't match trusted domains
+        urls = re.findall(r'https?://([^\s/\)]+)', text)
+        for url_domain in urls:
+            is_trusted = any(url_domain.endswith(d) for d in self.TRUSTED_DOMAINS)
+            if not is_trusted:
+                warnings.append(f"UNTRUSTED URL: {url_domain}")
+
+        # Check for email addresses that don't match trusted domains
+        emails = re.findall(r'[\w.+-]+@([\w.-]+)', text)
+        for email_domain in emails:
+            is_trusted = any(email_domain.endswith(d) for d in self.TRUSTED_DOMAINS)
+            if not is_trusted:
+                warnings.append(f"UNTRUSTED EMAIL DOMAIN: {email_domain}")
+
+        # Check for requests to share sensitive information
+        sensitive_patterns = [
+            (r'(?i)credit\s+card\s+number', "Asks for credit card number"),
+            (r'(?i)full\s+credit\s+card', "Asks for credit card details"),
+            (r'(?i)enter\s+(your|their)\s+(current\s+)?password', "Asks to enter password"),
+            (r'(?i)social\s+security\s+number', "Asks for SSN"),
+            (r'(?i)1-900-', "Premium rate phone number"),
+        ]
+
+        for pattern, description in sensitive_patterns:
+            if re.search(pattern, text):
+                warnings.append(f"SENSITIVE DATA REQUEST: {description}")
+
+        is_safe = len(warnings) == 0
+
+        if not is_safe:
+            self.security_log.append({
+                "check": "output_scan",
+                "result": "FLAGGED",
+                "warnings": warnings,
+            })
+
+        return is_safe, warnings
 
     def filter_chunks(self, chunks: List[Dict]) -> List[Dict]:
         """
@@ -155,8 +254,48 @@ class SecurityGuard:
         List[Dict]
             Only chunks that pass all security checks
         """
-        # TODO: Implement the full security filtering pipeline
-        pass
+        safe_chunks = []
+
+        print("\n" + "=" * 60)
+        print("SECURITY GUARD - Filtering Retrieved Chunks")
+        print("=" * 60)
+
+        for i, chunk in enumerate(chunks, 1):
+            source = chunk.get('source', 'unknown')
+            score = chunk.get('score', 0)
+            content = chunk.get('content', '')
+            blocked = False
+            reasons = []
+
+            # CHECK 1: Source allowlist
+            if not self.verify_source(source):
+                blocked = True
+                reasons.append(f"Untrusted source: {source}")
+
+            # CHECK 2: Relevance threshold
+            if not self.check_relevance(score):
+                blocked = True
+                reasons.append(f"Low relevance: {score:.3f}")
+
+            # CHECK 3: Injection scanning
+            is_safe, injection_warnings = self.scan_for_injection(content)
+            if not is_safe:
+                blocked = True
+                reasons.extend(injection_warnings)
+
+            # Report result
+            if blocked:
+                print(f"\n  [BLOCKED] Chunk {i} from '{source}'")
+                for reason in reasons:
+                    print(f"    >> {reason}")
+            else:
+                print(f"\n  [  OK  ] Chunk {i} from '{source}' (score: {score:.3f})")
+                safe_chunks.append(chunk)
+
+        print(f"\n  Result: {len(safe_chunks)}/{len(chunks)} chunks passed security checks")
+        print("=" * 60)
+
+        return safe_chunks
 
     def get_security_report(self) -> str:
         """
@@ -167,8 +306,32 @@ class SecurityGuard:
         str
             Formatted security report
         """
-        # TODO: Implement security report generation
-        pass
+        if not self.security_log:
+            return "No security events recorded."
+
+        report = "\nSECURITY REPORT\n"
+        report += "=" * 60 + "\n"
+
+        blocked = sum(1 for e in self.security_log if e.get('result') == 'BLOCKED')
+        flagged = sum(1 for e in self.security_log if e.get('result') == 'FLAGGED')
+
+        report += f"  Total events: {len(self.security_log)}\n"
+        report += f"  Blocked: {blocked}\n"
+        report += f"  Flagged: {flagged}\n"
+        report += "-" * 60 + "\n"
+
+        for i, event in enumerate(self.security_log, 1):
+            report += f"\n  Event {i}: [{event.get('result')}] {event.get('check')}\n"
+            if 'warnings' in event:
+                for w in event['warnings']:
+                    report += f"    - {w}\n"
+            if 'reason' in event:
+                report += f"    - {event['reason']}\n"
+            if 'source' in event:
+                report += f"    - Source: {event['source']}\n"
+
+        report += "\n" + "=" * 60
+        return report
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -369,10 +532,50 @@ ANSWER:"""
         # ════════════════════════════════════════════════════════════
         # SECURITY CHECKPOINT 1: Filter retrieved chunks
         # ════════════════════════════════════════════════════════════
+        # This removes poisoned, untrusted, or low-quality chunks
+        # BEFORE they reach the LLM
+        safe_chunks = self.security_guard.filter_chunks(context_chunks)
+
+        # If ALL chunks were filtered out, the query may be under attack
+        if not safe_chunks:
+            return {
+                "answer": "[SECURITY] All retrieved context was flagged as "
+                          "potentially compromised. Cannot provide a safe answer. "
+                          "Please verify the knowledge base integrity.",
+                "sources": [],
+                "context_used": [],
+                "security_events": self.security_guard.security_log
+            }
+
+        # STEP 2: AUGMENT (using only safe chunks)
+        prompt = self.build_prompt(question, safe_chunks)
+
+        # STEP 3: GENERATE
+        answer = self.generate(prompt)
 
         # ════════════════════════════════════════════════════════════
         # SECURITY CHECKPOINT 2: Scan LLM output
         # ════════════════════════════════════════════════════════════
+        # Even with filtered input, check the output for suspicious content
+        # (defense in depth - the LLM might still produce harmful output)
+        output_safe, output_warnings = self.security_guard.scan_output(answer)
+
+        if not output_safe:
+            print("\n" + "!" * 60)
+            print("SECURITY WARNING - Suspicious content in LLM output:")
+            for w in output_warnings:
+                print(f"  >> {w}")
+            print("!" * 60)
+
+            answer = (
+                "[SECURITY WARNING] The generated response contains "
+                "potentially suspicious content:\n"
+                + "\n".join(f"  - {w}" for w in output_warnings)
+                + "\n\n--- Original Response (review with caution) ---\n"
+                + answer
+                + "\n--- End of flagged response ---\n"
+                "\nPlease verify this information through official channels."
+            )
 
         # Package response
         response = {
