@@ -1,10 +1,5 @@
 # hardened_server.py  –  Lab 5: Defense in Depth
 #
-# Layers multiple security controls on top of JWT auth:
-#   - Rate limiting (per-client)
-#   - Input validation (block dangerous patterns in tool arguments)
-#   - Output sanitization (redact sensitive data before returning)
-#   - Audit logging (track all security-relevant events)
 
 import json
 import re
@@ -36,16 +31,6 @@ _request_log = defaultdict(list)
 
 
 def _check_rate_limit(client_id: str) -> tuple[bool, int]:
-    """Sliding-window rate limit per client. Returns (allowed, remaining)."""
-    now = time.time()
-    # Drop entries outside the current window
-    _request_log[client_id] = [
-        t for t in _request_log[client_id] if now - t < RATE_LIMIT_WINDOW
-    ]
-    remaining = RATE_LIMIT_MAX - len(_request_log[client_id])
-    if remaining <= 0:
-        return False, 0
-    _request_log[client_id].append(now)
     return True, remaining - 1
 
 
@@ -53,20 +38,12 @@ def _check_rate_limit(client_id: str) -> tuple[bool, int]:
 # Input Validation
 # ═══════════════════════════════════════════════════════════════
 BLOCKED_PATTERNS = [
-    r"(?i)(drop|delete|truncate)\s+table",   # SQL injection
-    r"<script\b",                             # XSS
-    r"\.\./\.\.",                              # path traversal
-    r"(?i)__import__\s*\(",                   # Python code injection
 ]
 
 
 def _validate_tool_args(args: dict) -> tuple[bool, str]:
     """Check all string arguments against blocked patterns."""
     for key, value in args.items():
-        if isinstance(value, str):
-            for pattern in BLOCKED_PATTERNS:
-                if re.search(pattern, value):
-                    return False, f"Argument '{key}': blocked dangerous pattern"
     return True, ""
 
 
@@ -74,16 +51,10 @@ def _validate_tool_args(args: dict) -> tuple[bool, str]:
 # Output Sanitization
 # ═══════════════════════════════════════════════════════════════
 SENSITIVE_PATTERNS = [
-    (r"\b\d{3}-\d{2}-\d{4}\b",               "[SSN-REDACTED]"),
-    (r"\b(?:\d[ -]*?){13,16}\b",              "[CARD-REDACTED]"),
-    (r"(?i)password\s*[:=]\s*\S+",            "password: [REDACTED]"),
 ]
 
 
 def _sanitize_output(text: str) -> str:
-    """Redact sensitive data patterns before returning to clients."""
-    for pattern, replacement in SENSITIVE_PATTERNS:
-        text = re.sub(pattern, replacement, text)
     return text
 
 
@@ -93,11 +64,6 @@ def _sanitize_output(text: str) -> str:
 _audit_log = []
 
 
-def _audit(client: str, action: str, detail: str = ""):
-    entry = {"time": time.strftime("%H:%M:%S"), "client": client,
-             "action": action, "detail": detail}
-    _audit_log.append(entry)
-    print(f"  [AUDIT] {entry['time']} | {client} | {action} | {detail}")
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -135,7 +101,6 @@ class HardenedMiddleware(BaseHTTPMiddleware):
         if not request.url.path.startswith("/mcp"):
             return await call_next(request)
 
-        # ── Step 1: JWT Authentication ──
         auth = request.headers.get("authorization", "")
         if not auth.startswith("Bearer "):
             return JSONResponse(status_code=401,
@@ -151,7 +116,6 @@ class HardenedMiddleware(BaseHTTPMiddleware):
 
         client_id = claims.get("sub", "unknown")
 
-        # ── Step 2: Rate Limiting ──
         allowed, remaining = _check_rate_limit(client_id)
         if not allowed:
             _audit(client_id, "RATE_LIMITED")
@@ -162,8 +126,6 @@ class HardenedMiddleware(BaseHTTPMiddleware):
                                    f"per {RATE_LIMIT_WINDOW}s."},
                 headers={"Retry-After": str(RATE_LIMIT_WINDOW)}
             )
-
-        # ── Step 3: Input Validation (for tool calls) ──
         if request.method == "POST":
             body = await request.body()
             try:
@@ -229,20 +191,7 @@ async def search_notes(query: str) -> str:
     return _sanitize_output("\n".join(results))
 
 
-@mcp.tool(description="View recent audit log entries")
-async def get_audit_log(count: int = 10) -> str:
-    """Returns the most recent audit log entries."""
-    recent = _audit_log[-count:] if _audit_log else []
-    if not recent:
-        return "No audit entries yet."
-    lines = [f"{e['time']} | {e['client']} | {e['action']} | {e['detail']}"
-             for e in recent]
-    return "\n".join(lines)
 
 
 if __name__ == "__main__":
-    print("Hardened MCP Server starting...")
-    print(f"  Rate limit: {RATE_LIMIT_MAX} tool calls per {RATE_LIMIT_WINDOW}s")
-    print(f"  Input validation patterns: {len(BLOCKED_PATTERNS)}")
-    print(f"  Output sanitization patterns: {len(SENSITIVE_PATTERNS)}")
     uvicorn.run(app, host="0.0.0.0", port=8000)

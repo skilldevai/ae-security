@@ -1,4 +1,4 @@
-# hardened_client.py  –  Lab 3b: Defense in Depth
+# hardened_client.py  –  Lab 5: Defense in Depth
 # Tests the hardened MCP server's security controls.
 
 import asyncio

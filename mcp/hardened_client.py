@@ -1,4 +1,4 @@
-# hardened_client.py  –  Lab 3b: Defense in Depth
+# hardened_client.py  –  Lab 5: Defense in Depth
 # Tests the hardened MCP server's security controls.
 
 import asyncio
@@ -36,12 +36,34 @@ async def main():
         print(f"add(3, 4) = {result}")
 
     # ── Scenario 2: Customer lookup ──
+
+        result = await c.call_tool("lookup_customer", {"name": "bob"})
+        print(f"\nBob's record:\n{result}")
+        print("\n  ^ Notice: password in notes is also redacted!")
+
+    # ── Scenario 3: Rate limiting test (raw HTTP) ──
+            status = "OK" if r.status_code == 200 else f"BLOCKED ({r.status_code})"
+            print(f"  Request {i+1}: {status}")
+
     print("\n" + "=" * 50)
-    print("Scenario 2: Customer Lookup")
+    print("Scenario 4: Input Validation (dangerous input)")
     print("=" * 50)
-    async with Client(MCP_ENDPOINT, auth=token) as c:
-        result = await c.call_tool("lookup_customer", {"name": "alice"})
-        print(f"Customer lookup result:\n{result}")
+    async with httpx.AsyncClient() as h:
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json"
+        }
+        if r.status_code == 400:
+            print(f"  Server says: {r.json().get('detail', '')}")
+
+        print(f"  SQL injection attempt: status {r.status_code}")
+        if r.status_code == 400:
+            print(f"  Server says: {r.json().get('detail', '')}")
+
+    # ── Scenario 5: View audit log ──
+    print("\n" + "=" * 50)
+    print("Scenario 5: Audit Log")
+    print("=" * 50)
 
 
 if __name__ == "__main__":
