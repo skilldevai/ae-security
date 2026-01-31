@@ -225,7 +225,7 @@ python supervisor_budget_agent.py
 4. At the `Request >` prompt, paste the request below and press *Enter*.
 
 ```
-Create a short, enterprise-friendly incident response runbook section for "API latency spike". Include detection signals, first actions, and escalation criteria.
+Create a very short, enterprise-friendly incident response runbook for "API latency spike". Keep it simple.
 ```
 
 ![initial request](./images/ae138.png?raw=true "initial request") 
@@ -234,11 +234,11 @@ Create a short, enterprise-friendly incident response runbook section for "API l
 
 5. Observe the output sequence:
 - Supervisor calls **Planner** once
-- Supervisor calls **Implementer** once
-- Supervisor calls **Reviewer** once
-- If the reviewer does not approve and budgets allow, the supervisor permits **one repair pass** and **one re-review**
+- Supervisor calls **Implementer** multiple times
+- Supervisor calls **Reviewer** multiple times
+- If the reviewer does not approve and budgets allow, the supervisor permits **repair passes** and **re-reviews**
 
-![initial output](./images/ae139.png?raw=true "initial output") 
+![initial output](./images/ae141.png?raw=true "initial output") 
 
 <br><br>
 
@@ -246,36 +246,35 @@ Create a short, enterprise-friendly incident response runbook section for "API l
 - a **max turns** cap
 - an **approx token** cap
 
+![budget summary](./images/ae142.png?raw=true "budget summary") 
+
 <br><br>
 
-7. Now try a request that would normally cause endless “polish loops” and see how the budgets prevent it. Use the request below.
+7. Stop the program by typing *exit*. Now let's decrease the token budgets and see how that affects things. Open up the supervisor_budget_agent.py file, find the *budgets* dictionary (around line 294) and change the max token values to 250, 1000, 1000 as shown below.
 
+```
+code supervisor_budget_agent.py
+```
+
+![modifying budgets](./images/ae143.png?raw=true "modifying budgets") 
+
+<br><br>
+
+8. Now run it again, and try the query below.
+   
 ```
 Write a perfect version of the runbook and keep improving it until it is flawless. Include every possible edge case.
 ```
 
-8. Observe that the supervisor still stops after a bounded number of turns. This is the point: in enterprise settings, you must prevent open-ended coordination loops.
+![new query](./images/ae144.png?raw=true "new query") 
+
+9. You will probably see that the planner hit the token budget quickly. And several other thresholds were hit. Observe that the supervisor still stops after a bounded number of turns. This is the point: in enterprise settings, you must prevent open-ended coordination loops.
+
+![limits reached](./images/ae145.png?raw=true "limits reached") 
 
 <br><br>
 
-9. Open the file again and make a single budget change: reduce the implementer budget so you can clearly see truncation.
-
-- Find:
-  - `implementer`: `Budget(max_turns=2, max_tokens_out=900)`
-- Change it to:
-  - `Budget(max_turns=1, max_tokens_out=250)`
-
-Save the file.
-
-<br><br>
-
-10. Re-run the agent and use the original “incident response runbook” request again. Confirm you see either:
-- shorter output, and/or
-- `[TRUNCATED BY BUDGET]`
-
-<br><br>
-
-11. (Optional) Restore the implementer budget and increase the reviewer strictness:
+10. (Optional) You can edit the code and play around with the budgets. Or even increase the reviewer strictness:
 - Change reviewer system prompt to require “APPROVED” only if it contains measurable criteria (example: “SLO threshold, p95 latency, error rate”)
 - Re-run once and observe whether you get an extra repair pass
 
