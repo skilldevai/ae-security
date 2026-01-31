@@ -146,15 +146,15 @@ def main():
         llm = LiteLLMModel(
             model_id=f"ollama/{OLLAMA_MODEL}",
             api_base="http://localhost:11434",
-    )
+        )
 
-    # LEAST PRIVILEGE: Only read-only benefits and PTO tools
-    agent = ToolCallingAgent(
-        tools=[lookup_benefits, check_pto_balance],
-        model=llm,
+        # LEAST PRIVILEGE: Only read-only benefits and PTO tools
+        agent = ToolCallingAgent(
+            tools=[lookup_benefits, check_pto_balance],
+            model=llm,
             instructions=SYSTEM_PROMPT,
             max_steps=3,  # Limit steps to prevent hanging on final response
-    )
+        )
     except Exception as e:
         print(f"[ERROR] Failed to initialize agent: {e}")
         return
