@@ -40,7 +40,7 @@ class Agent:
         self.llm = llm
         self.system_prompt = system_prompt
 
-    def run(self, packet: HandoffPacket, instruction: str, max_output_chars: int = 1200) -> str:
+    def run(self, packet: HandoffPacket, instruction: str, max_output_chars: int = 2000) -> str:
         messages = [
             SystemMessage(content=self.system_prompt),
             HumanMessage(content=self._format_input(packet, instruction)),
@@ -75,11 +75,6 @@ class Supervisor:
         packet = HandoffPacket(user_goal=user_goal)
         print("\n=== SUPERVISOR: START ===")
         print(f"Goal: {user_goal}\n")
-
-
-        # Optional single repair pass: if reviewer requests fixes, let implementer patch once.
-        if "APPROVED" not in packet.review.upper() and self.budgets["implementer"].can_run():
-            packet.notes.append("Supervisor: Reviewer requested fixes. One repair pass allowed.")
             self._call_agent(
                 agent=self.implementer,
                 role="implementer",
@@ -90,7 +85,7 @@ class Supervisor:
                 ),
                 save_to="implementation",
             )
-            # Re-review once if budget allows
+        
             if self.budgets["reviewer"].can_run():
                 self._call_agent(
                     agent=self.reviewer,
@@ -119,7 +114,7 @@ class Supervisor:
             return
 
         print(f"[SUPERVISOR] Calling {role.upper()} (turn {budget.turns_used + 1}/{budget.max_turns})...")
-        output = agent.run(packet, instruction, max_output_chars=1200)
+        output = agent.run(packet, instruction, max_output_chars=2000)
         budget.record(output)
 
         setattr(packet, save_to, output)
@@ -138,7 +133,8 @@ class Supervisor:
 
 def main() -> None:
     # Local model via Ollama (consistent with other labs)
-    llm = ChatOllama(model="llama3.2:latest", temperature=0)
+    # num_predict limits output tokens for faster generation
+    llm = ChatOllama(model="llama3.2:1b", temperature=0, num_predict=400)
 
     planner = Agent(
         role="planner",
@@ -151,10 +147,6 @@ def main() -> None:
     reviewer = Agent(
         role="reviewer",
         llm=llm,
-    )
-
-    # Enterprise-friendly budgets:
-    # - implementer gets the largest output budget
     budgets: Dict[Role, Budget] = {
     }
 
