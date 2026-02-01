@@ -1,4 +1,4 @@
-# Applied AI Engineering for the Enterprise - Security Workshop
+# Applied AI Engineering for the Enterprise - Security and Best Practices Workshop
 
 ## Securing RAG, MCP, and Agents
 
