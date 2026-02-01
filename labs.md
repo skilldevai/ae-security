@@ -618,7 +618,7 @@ python secure_client.py
 
 **Lab 5 – MCP Defense in Depth: Rate Limiting, Input Validation & Output Sanitization**
 
-**Purpose: Building on the JWT authentication from Lab 3, this lab adds three additional security layers to an MCP server: rate limiting to prevent abuse, input validation to block dangerous payloads, output sanitization to prevent sensitive data leakage, and audit logging to track security events.**
+**Purpose: Building on the JWT authentication from Lab 4, this lab adds three additional security layers to an MCP server: rate limiting to prevent abuse, input validation to block dangerous payloads, output sanitization to prevent sensitive data leakage, and audit logging to track security events.**
 
 1. Look for these files in the **mcp** subdirectory.
 
