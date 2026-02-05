@@ -1,7 +1,7 @@
 # Applied AI Engineering for the Enterprise
 ## Security Workshop
 ## Session labs 
-## Revision 1.6 - 02/04/26
+## Revision 1.7 - 02/05/26
 
 **Follow the startup instructions in the README.md file IF NOT ALREADY DONE!**
 
@@ -618,7 +618,7 @@ python secure_client.py
 
 **Lab 5 – MCP Defense in Depth: Rate Limiting, Input Validation & Output Sanitization**
 
-**Purpose: Building on the JWT authentication from Lab 4, this lab adds three additional security layers to an MCP server: rate limiting to prevent abuse, input validation to block dangerous payloads, output sanitization to prevent sensitive data leakage, and audit logging to track security events.**
+**Purpose: Building on the JWT authentication from Lab 4, this lab adds additional security layers to an MCP server: rate limiting to prevent abuse, input validation to block dangerous payloads, output sanitization to prevent sensitive data leakage, and audit logging to track security events.**
 
 1. Look for these files in the **mcp** subdirectory.
 
@@ -792,12 +792,12 @@ curl -s -X POST http://127.0.0.1:8000/mcp \
 
 | **Layer** | **What it does** | **Lab** |
 |---|---|---|
-| **JWT Authentication** | Verifies the caller's identity via signed tokens | Lab 3 |
-| **Per-Tool Scopes** | Controls which tools each client can invoke | Lab 3 |
-| **Rate Limiting** | Prevents abuse by throttling requests per client | Lab 3b |
-| **Input Validation** | Blocks dangerous payloads (SQLi, XSS, traversal) | Lab 3b |
-| **Output Sanitization** | Redacts sensitive data (SSN, cards, passwords) before returning | Lab 3b |
-| **Audit Logging** | Records all security events for monitoring and forensics | Lab 3b |
+| **JWT Authentication** | Verifies the caller's identity via signed tokens | Lab 4 |
+| **Per-Tool Scopes** | Controls which tools each client can invoke | Lab 4 |
+| **Rate Limiting** | Prevents abuse by throttling requests per client | Lab 4 |
+| **Input Validation** | Blocks dangerous payloads (SQLi, XSS, traversal) | Lab 4 |
+| **Output Sanitization** | Redacts sensitive data (SSN, cards, passwords) before returning | Lab 4 |
+| **Audit Logging** | Records all security events for monitoring and forensics | Lab 4 |
 
    In production, you would combine all of these layers in a single server and add TLS, key rotation, and integration with an external identity provider.
 
