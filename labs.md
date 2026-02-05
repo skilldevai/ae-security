@@ -1,7 +1,7 @@
 # Applied AI Engineering for the Enterprise
 ## Security Workshop
 ## Session labs 
-## Revision 1.5 - 01/31/26
+## Revision 1.6 - 02/04/26
 
 **Follow the startup instructions in the README.md file IF NOT ALREADY DONE!**
 
@@ -250,7 +250,7 @@ Create a very short, enterprise-friendly incident response runbook for "API late
 
 <br><br>
 
-7. Stop the program by typing *exit*. Now let's decrease the token budgets and see how that affects things. Open up the supervisor_budget_agent.py file, find the *budgets* dictionary (around line 294) and change the max token values to 250, 1000, 1000 as shown below.
+7. Stop the program by typing *exit*. Now let's decrease the token budgets and see how that affects things. Open up the supervisor_budget_agent.py file, find the *budgets* dictionary (around line 294) and change the max token values to 250, 1000, 1000 as shown below. 
 
 ```
 code supervisor_budget_agent.py
@@ -260,7 +260,7 @@ code supervisor_budget_agent.py
 
 <br><br>
 
-8. Now run it again, and try the query below.
+8. **Save your changes.** Now run it again, and try the query below.
    
 ```
 Write a perfect version of the runbook and keep improving it until it is flawless. Include every possible edge case.
