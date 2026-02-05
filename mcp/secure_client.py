@@ -1,4 +1,4 @@
-# secure_client.py  –  Lab 3: Auth + Per-Tool Scopes
+# secure_client.py  –  Lab 4: Auth + Per-Tool Scopes
 # Demonstrates per-tool scope enforcement with different client identities.
 
 import asyncio

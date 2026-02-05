@@ -18,27 +18,19 @@ EXPIRES_IN = 3600                      # 1 hour
 _fake_clients = {
     "full-client": {
         "client_secret": "fullpass",
-        "scopes": ["tools:add", "tools:multiply", "tools:divide"]
+        "scopes": []
     },
     "limited-client": {
         "client_secret": "limitedpass",
-        "scopes": ["tools:add"]
+        "scopes": []
     }
 }
 
-app = FastAPI(title="MCP Lab – Auth Server")
 
 
 # 2) Create a JWT that carries the client's allowed scopes
 def _create_access_token(sub: str, scopes: list[str]) -> str:
     now = datetime.utcnow()
-    payload = {
-        "sub": sub,
-        "scope": " ".join(scopes),
-        "aud": AUDIENCE,
-        "iat": now,
-        "exp": now + timedelta(seconds=EXPIRES_IN),
-    }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 
@@ -49,7 +41,6 @@ def token(form: OAuth2PasswordRequestForm = Depends()):
     if not client or client["client_secret"] != form.password:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Invalid client credentials")
-    # 3) Token carries the client's allowed scopes
     access_token = _create_access_token(form.username, client["scopes"])
     return {
         "access_token": access_token,

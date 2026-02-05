@@ -1,4 +1,4 @@
-# auth_server.py  –  Lab 3: Auth + Per-Tool Scopes
+# auth_server.py  –  Lab 4: Auth + Per-Tool Scopes
 #
 # FastAPI >= 0.110, python-jose, uvicorn
 # Issues + introspects HS256-signed JWTs with per-tool scopes
