@@ -54,7 +54,6 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
 
 # 4) Register the middleware
-app.add_middleware(AuthMiddleware)
 
 
 # 5) Secure tools
