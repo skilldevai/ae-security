@@ -1,7 +1,7 @@
 # Applied AI Engineering for the Enterprise
 ## Security Workshop
 ## Session labs 
-## Revision 1.7 - 02/05/26
+## Revision 1.8 - 02/07/26
 
 **Follow the startup instructions in the README.md file IF NOT ALREADY DONE!**
 
@@ -42,7 +42,7 @@ This document looks like a legitimate OmniTech internal memo, but it contains th
 python ../tools/create_db.py
 ```
 
-Watch the output — you'll see the legitimate PDFs indexed first, then the poisoned chunks injected into the same database. The poisoned chunks are given metadata that makes them look like they came from a real PDF (`OmniTech_Security_Bulletin_2026.pdf`).
+Watch the output — you'll see the legitimate PDFs indexed first, then the poisoned chunks injected into the same database. The poisoned chunks are given metadata that makes them look like they came from a real PDF (`OmniTech_Security_Bulletin.pdf`).
 
 ![Building vector db](./images/ae99.png?raw=true "building vector db") 
 
