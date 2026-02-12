@@ -70,4 +70,4 @@ Use of this repository is permitted **only for registered workshop participants*
 practice. Redistribution, republication, or reuse of any part of these materials for teaching, commercial, or derivative
 purposes is not allowed without written permission.
 
-© 2025 TechUpSkills / Brent Laster. All rights reserved.
+© 2026 TechUpSkills / Brent Laster. All rights reserved.
