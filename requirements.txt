@@ -49,3 +49,4 @@ python-multipart>=0.0.22
 fastmcp>=2.14.4
 
 smolagents
+smolagents[litellm]
