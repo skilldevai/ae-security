@@ -34,42 +34,29 @@ code .
 
 <br>
 
-![Starting in VS Code](./images/local-5.png?raw=true "Starting in VS Code")
+![Starting in VS Code](./images/local-5-b.png?raw=true "Starting in VS Code")
 
 <br>
 
-**If you get a popup about "Not all host requirements in devcontainer.json are met by the Docker daemon", you can just click *Continue* and it will probably still be fine.**
 
-![Host requirements](./images/local-6.png?raw=true "Host requirements")
+**4. Run the commands below to setup the python env and startup Ollama.**
+
+```
+scripts/pysetup.sh py_env && scripts/startup_ollama.sh
+```
+
+**5. Allow the setup processing to run automatically. (May take up to 10 minutes for some projects).**
+
+<br>
+
+![Setup](./images/local-6-b.png?raw=true "Setup")
 
 <br><br>
 
 
-**8. Allow the setup processing to run automatically. (May take up to 10 minutes for some projects).**
+**6. You are now ready to run the labs in your local environment!**
 
-<br>
-
-![Setup](./images/local-7.png?raw=true "Setup")
-
-<br><br>
-
-**9. When the processing is done, you'll see a message like "Done. Press any key to close the terminal."**
-
-<br>
-
-![Done](./images/local-8.png?raw=true "Done")
-
-<br><br>
-
-**10. Once you hit a key, that terminal will go away. To get a new terminal, you can either drag up from the bottom or use the *Terminal* -> *New terminal* command from the VS Code menu.**
-
-<br>
-
-![Terminal](./images/local-9.png?raw=true "terminal")
-
-<br><br>
-
-**11. You are now ready to run the labs in your local environment!**
+**NOTE: For any paths in the labs that reference `/workspaces/ae-security` you should use the directory of your clone instead.
 
 <br><br>
 
